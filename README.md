@@ -2,6 +2,25 @@
 
 A new Flutter project.
 
+
+# firebase + flutter 
+
+
+### Read 
+final CollectionReference _users_ = FirebaseFirestore.instance.collect("users");
+## Create 
+await _users.add({"username": username, "age": age});
+
+
+## Edit 
+await _users.doc(userId).update({"username": username, "age": age});
+
+
+## Delete 
+await _users.doc(userId).delete();
+
+
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.
