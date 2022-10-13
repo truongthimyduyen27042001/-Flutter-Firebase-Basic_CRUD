@@ -16,123 +16,143 @@ class _ListscreenState extends State<Listscreen> {
       FirebaseFirestore.instance.collection('users').snapshots();
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _usersStream,
-      builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
-        if (snapshot.hasError) {
-          return Text('Something went wrong');
-        }
+    return Scaffold(
+        backgroundColor: Colors.grey.shade100,
+        body: Padding(
+          padding: const EdgeInsets.all(20),
+          child: StreamBuilder<QuerySnapshot>(
+            stream: _usersStream,
+            builder:
+                (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+              if (snapshot.hasError) {
+                return Text('Something went wrong');
+              }
 
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Text("Loading");
-        }
-        return ListView(
-          children: snapshot.data!.docs.map((DocumentSnapshot document) {
-            Map<String, dynamic> data =
-                document.data()! as Map<String, dynamic>;
-            // return Container(
-            //   child: Row(
-            //     children: [
-            //       Text(data['age'].toString()),
-            //       Text(data['username'].toString())
-            //     ],
-            //   ),
-            // );
-            return StudentWidget(
-              name: data['username'].toString(),
-              age: data['age'].toString(),
-            );
-          }).toList(),
-        );
-      },
-    );
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Text("Loading");
+              }
+              return ListView(
+                children: snapshot.data!.docs.map((DocumentSnapshot document) {
+                  Map<String, dynamic> data =
+                      document.data()! as Map<String, dynamic>;
+
+                  return StudentWidget(
+                    name: data['username'].toString(),
+                    age: data['age'].toString(),
+                    document: document,
+                  );
+                }).toList(),
+              );
+            },
+          ),
+        ));
   }
 }
 
 class StudentWidget extends StatelessWidget {
-  const StudentWidget({
+  StudentWidget({
     Key? key,
     required this.age,
     required this.name,
+    required this.document,
   }) : super(key: key);
   final String age;
   final String name;
+  final DocumentSnapshot document;
+  final TextEditingController _nameController = TextEditingController();
+
+  final TextEditingController _ageController = TextEditingController();
+  Future<void> _update() async {
+    final docUser =
+        FirebaseFirestore.instance.collection("users").doc(document.id);
+    await docUser
+        .update({"username": _nameController.text, "age": _ageController.text});
+    print("hello world");
+  }
+
+  Future<void> delete() async {
+    final docUser =
+        FirebaseFirestore.instance.collection("users").doc(document.id);
+    docUser.delete();
+  }
+
   @override
   Widget build(BuildContext context) {
+    //open update view
+    Future<void> _showEdit([DocumentSnapshot? documentSnapshot]) async {
+      if (documentSnapshot != null) {
+        _nameController.text = "Le Tuann";
+        _ageController.text = document['age'];
+      }
+      _nameController.text = document['username'];
+      _ageController.text = document['age'].toString();
+      await showModalBottomSheet(
+          isScrollControlled: true,
+          context: context,
+          builder: (context) {
+            return Padding(
+              padding: EdgeInsets.only(
+                  top: 20,
+                  left: 20,
+                  right: 20,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 20),
+              child: Column(children: [
+                TextField(
+                  controller: _nameController,
+                  decoration:
+                      InputDecoration(labelText: "Name", hintText: name),
+                ),
+                TextField(
+                  controller: _ageController,
+                  decoration: InputDecoration(labelText: "Age"),
+                ),
+                SizedBox(height: 20),
+                ElevatedButton(
+                  child: Text('Update'),
+                  onPressed: () {
+                    _update();
+                  },
+                )
+              ]),
+            );
+          });
+    }
+
+    //delete
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
       child: Container(
-        color: Colors.orange,
+        decoration: BoxDecoration(
+            color: Colors.white, borderRadius: BorderRadius.circular(5)),
+        padding: EdgeInsets.all(15),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            //age
-            Container(
-              width: 50,
-              height: 50,
-              decoration:
-                  BoxDecoration(shape: BoxShape.circle, color: Colors.green),
-              child: Center(
-                child: Text(
-                  age,
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold),
-                ),
-              ),
-            ), //infor
-            SizedBox(width: 20),
             Expanded(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  //name
-                  Text(
-                    name,
-                    style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    "2022-01-21",
-                    style: TextStyle(color: Colors.black38, fontSize: 15),
-                  )
-                  //birthday
-                ],
-              ),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: TextStyle(fontSize: 18),
+                    ),
+                    Text(
+                      age,
+                      style: TextStyle(fontSize: 14),
+                    )
+                  ]),
             ),
-
-            Row(
-              children: [
-                TextButton(
-                  style: ButtonStyle(
-                    foregroundColor:
-                        MaterialStateProperty.all<Color>(Colors.green),
-                  ),
-                  onPressed: () {
-                    final docUser = FirebaseFirestore.instance
-                        .collection("users")
-                        .doc("xAIiXKfrhY5m1GD6c9dV");
-                    docUser.update({"username": "new name"});
-                  },
-                  child: Text('Edit'),
-                ),
-                TextButton(
-                  style: ButtonStyle(
-                    foregroundColor:
-                        MaterialStateProperty.all<Color>(Colors.red),
-                  ),
-                  onPressed: () {
-                    final docUser = FirebaseFirestore.instance
-                        .collection("users")
-                        .doc("12sdsds");
-                    docUser.delete();
-                  },
-                  child: Text('Delete'),
-                )
-              ],
+            IconButton(
+              icon: Icon(Icons.edit),
+              onPressed: () {
+                _showEdit();
+              },
+            ),
+            IconButton(
+              icon: Icon(Icons.delete),
+              onPressed: () {
+                delete();
+              },
             )
           ],
         ),

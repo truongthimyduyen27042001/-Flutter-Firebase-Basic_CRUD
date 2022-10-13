@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 // ignore: depend_on_referenced_packages
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:user_crud/list_page.dart';
 
 class AddScreen extends StatefulWidget {
   const AddScreen({super.key});
@@ -19,12 +20,14 @@ class _AddScreenState extends State<AddScreen> {
   late String birthDateInString = "";
   Future addUser({required String name}) async {
     final docUser = FirebaseFirestore.instance.collection('users');
-    final json = {
-      "name": _nameController.text.trim(),
-      "age": int.parse(_ageController.text),
+    print(_nameController.text.toString());
+    await docUser.add({
+      "username": _nameController.text,
+      "age": _ageController.text,
       "birthday": birthDate
-    };
-    docUser.add(json);
+    });
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (context) => Listscreen()));
   }
 
   @override
@@ -46,7 +49,7 @@ class _AddScreenState extends State<AddScreen> {
                       borderRadius: BorderRadius.circular(5)),
                   child: Padding(
                     padding: EdgeInsets.only(left: 12),
-                    child: TextFormField(
+                    child: TextField(
                       controller: _nameController,
                       decoration: const InputDecoration(
                           border: InputBorder.none, hintText: 'Name'),
@@ -61,7 +64,7 @@ class _AddScreenState extends State<AddScreen> {
                       borderRadius: BorderRadius.circular(5)),
                   child: Padding(
                     padding: EdgeInsets.only(left: 12),
-                    child: TextFormField(
+                    child: TextField(
                       controller: _ageController,
                       decoration: const InputDecoration(
                           border: InputBorder.none, hintText: 'Age'),
